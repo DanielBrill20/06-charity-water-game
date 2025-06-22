@@ -1,23 +1,7 @@
-/* Charity: water Brand Colors
-
-Primary Colors:
-- Yellow:     #FFC907
-- Blue:       #2E9DF7
-
-Secondary Colors:
-- Light Blue: #8BD1CB
-- Green:      #4FCB53
-- Orange:     #FF902A
-- Red:        #F5402C
-- Dark Green: #159A48
-- Pink:       #F16061
-
-*/
-
 /* Base Styles */
 body {
     margin: 0;
-    font-family: 'Proxima Nova', 'Avenir', Arial, sans-serif;
+    font-family: 'Proxima Nova', 'Montserrat', 'Avenir', Arial, sans-serif;
     background: #FED8C1;
     color: #111;
     min-height: 100vh;
@@ -188,6 +172,32 @@ html, body {
     overflow-x: hidden;
 }
 
+/* Footer Styles */
+#footer {
+    width: 100vw;
+    text-align: center;
+    background: #2E9DF7;
+    color: #fff;
+    padding: 16px 0 12px 0;
+    font-size: 1em;
+    font-family: 'Proxima Nova', 'Montserrat', 'Avenir', Arial, sans-serif;
+    margin-top: 0; /* Remove gap above footer */
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+}
+
+#footer a {
+    color: #FFC907;
+    text-decoration: underline;
+    font-weight: bold;
+}
+#footer a:hover {
+    color: #fff;
+}
+
 /* Responsive Design */
 @media (max-width: 600px) {
     #game-area {
@@ -318,6 +328,11 @@ html, body {
 
 /* Responsive: Desktop layout */
 @media (min-width: 800px) {
+    html, body {
+        height: 100vh;
+        min-height: 100vh;
+        overflow-y: hidden;
+    }
     #top-bar {
         flex-direction: row;
         align-items: flex-start;
@@ -369,9 +384,14 @@ html, body {
     #game-area {
         width: 98vw;
         max-width: none;
-        height: 85vh;
-        min-height: 400px;
+        /* Slightly shrink so bottom is always visible above footer */
+        height: calc(80vh - 64px); /* 80vh for game, 64px for footer */
+        min-height: 320px;
         margin: 24px auto 0 auto;
+        margin-bottom: 0;
+    }
+    body {
+        padding-bottom: 0;
     }
     #logo {
         max-width: 320px;
@@ -380,6 +400,37 @@ html, body {
     .life-drop {
         width: 48px;
         height: 48px;
+    }
+}
+
+/* Mobile: ensure bottom bar is above footer */
+@media (max-width: 799px) {
+    #bottom-bar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        /* Move up the bar so it never overlaps the footer */
+        bottom: 100px; /* 56px for footer + 24px extra space (about 1cm) */
+        width: 100vw;
+        margin: 0 auto;
+        z-index: 101;
+        background: transparent;
+        pointer-events: auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 500px;
+        gap: 12px;
+    }
+    #footer {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 100;
+    }
+    body {
+        padding-bottom: 136px; /* Room for fixed footer and bar */
     }
 }
 

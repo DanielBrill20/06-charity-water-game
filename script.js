@@ -12,6 +12,24 @@ let timerInterval = null;
 let multiplier = 1;
 let multiplierTimeout = null;
 let gameActive = false;
+let difficulty = 'Normal'; // Default difficulty
+let spawnSpeed = 800; // ms, will change with difficulty
+let winGoal = 30; // Points needed to win, changes with difficulty
+let milestones = [
+    { points: 10, message: 'Halfway there! (10 points)' },
+    { points: 20, message: 'Amazing! 20 points!' },
+    { points: 30, message: 'Goal reached! Keep going!' },
+    { points: 50, message: 'Water Hero! 50 points!' }
+];
+let nextMilestoneIdx = 0;
+
+// Sound effects (make sure these files exist in /sounds/)
+const sounds = {
+    collect: new Audio('sounds/collect.wav'),
+    lose: new Audio('sounds/lose.wav'),
+    button: new Audio('sounds/button.wav'),
+    win: new Audio('sounds/win.wav')
+};
 
 // DOM elements
 const logo = document.getElementById('logo');
@@ -24,18 +42,64 @@ const gameArea = document.getElementById('game-area');
 // Show intro modal on load
 showIntro();
 
-// Start game on button click
-document.getElementById('start-btn').addEventListener('click', startGame);
-document.getElementById('restart-btn').addEventListener('click', startGame);
+// Function to play a sound safely
+function playSound(sound) {
+    if (sounds[sound]) {
+        // Reset sound to allow replaying quickly
+        sounds[sound].currentTime = 0;
+        sounds[sound].play();
+    }
+}
+
+// Function to show the intro and difficulty selection
+function showIntro() {
+    gameArea.innerHTML = `<div class="overlay">
+        <h2>Welcome to Water Quest!</h2>
+        <p>Click water drops to earn points. Avoid pollutants! Click Jerry Cans for bonus multipliers.<br>Choose your difficulty to begin:</p>
+        <div style="margin: 12px 0;">
+            <button class="diff-btn" data-diff="Easy">Easy</button>
+            <button class="diff-btn" data-diff="Normal">Normal</button>
+            <button class="diff-btn" data-diff="Hard">Hard</button>
+        </div>
+    </div>`;
+    // Add event listeners for difficulty buttons
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+        btn.onclick = function() {
+            playSound('button');
+            difficulty = btn.getAttribute('data-diff');
+            setDifficulty(difficulty);
+            startGame();
+        };
+    });
+}
+
+// Set game parameters based on difficulty
+function setDifficulty(diff) {
+    if (diff === 'Easy') {
+        timer = 70;
+        spawnSpeed = 1100;
+        winGoal = 15;
+        lives = 4;
+    } else if (diff === 'Normal') {
+        timer = 60;
+        spawnSpeed = 800;
+        winGoal = 30;
+        lives = 3;
+    } else if (diff === 'Hard') {
+        timer = 40;
+        spawnSpeed = 500;
+        winGoal = 50;
+        lives = 2;
+    }
+}
 
 // Function to start or restart the game
 function startGame() {
     // Reset state
     score = 0;
-    lives = 3;
-    timer = 60;
     multiplier = 1;
     gameActive = true;
+    nextMilestoneIdx = 0;
     showMessage('');
     updateStatusBar();
     gameArea.innerHTML = '';
@@ -69,6 +133,17 @@ function updateStatusBar() {
     }
     pointsDiv.textContent = `Points: ${score}`;
     timerDiv.textContent = `Time: ${timer}s`;
+    // Show milestone messages if reached
+    if (nextMilestoneIdx < milestones.length && score >= milestones[nextMilestoneIdx].points) {
+        showMessage(milestones[nextMilestoneIdx].message);
+        nextMilestoneIdx++;
+        setTimeout(() => { showMessage(''); }, 2000);
+    }
+    // Show win message if win goal reached
+    if (score >= winGoal && gameActive) {
+        endGame('You reached the goal!');
+        playSound('win');
+    }
 }
 
 // Function to show/hide message area
@@ -87,7 +162,7 @@ function spawnItems() {
         if (rand < 0.7) spawnWaterDrop();
         else if (rand < 0.95) spawnPollutant();
         else spawnJerryCan();
-    }, 800);
+    }, spawnSpeed);
 }
 
 // Function to spawn a water drop
@@ -113,6 +188,7 @@ function spawnWaterDrop() {
     drop.addEventListener('click', () => {
         if (!gameActive) return;
         score += t.points * multiplier;
+        playSound('collect');
         drop.remove();
         updateStatusBar();
     });
@@ -136,6 +212,7 @@ function spawnPollutant() {
     pollutant.addEventListener('click', () => {
         if (!gameActive) return;
         lives--;
+        playSound('lose');
         showMessage('Ouch! -1 life.');
         pollutant.remove();
         updateStatusBar();
@@ -164,6 +241,7 @@ function spawnJerryCan() {
     can.addEventListener('click', () => {
         if (!gameActive) return;
         multiplier = 3;
+        playSound('collect');
         showMessage('x3 Multiplier!');
         can.remove();
         // Reset multiplier timer to 7s
@@ -185,10 +263,8 @@ function endGame(reason) {
     if (multiplierTimeout) clearTimeout(multiplierTimeout);
     showGameOver();
     showMessage(reason);
-    // If the user scored 50 or more, rain down water drops!
-    if (score >= 50) {
-        rainWaterDrops();
-    }
+    // Always rain down water drops at the end of the game
+    rainWaterDrops();
     // Place status bars correctly
     placeStatusBars();
 }
@@ -217,23 +293,17 @@ function rainWaterDrops() {
     }
 }
 
-// Overlays for intro and game over
-function showIntro() {
-    gameArea.innerHTML = `<div class="overlay">
-        <h2>Welcome to Water Quest!</h2>
-        <p>Click water drops to earn points. Avoid pollutants! Click Jerry Cans for bonus multipliers. Can you get the highest score before time runs out or you lose all your lives?</p>
-        <button id="start-btn">Start Game</button>
-    </div>`;
-    document.getElementById('start-btn').onclick = startGame;
-}
-
+// Overlays for game over
 function showGameOver() {
     gameArea.innerHTML = `<div class="overlay">
         <h2>Game Over!</h2>
         <p>Your score: ${score}</p>
         <button id="restart-btn">Play Again</button>
     </div>`;
-    document.getElementById('restart-btn').onclick = startGame;
+    document.getElementById('restart-btn').onclick = function() {
+        playSound('button');
+        showIntro();
+    };
 }
 
 // Utility to get or create a container
